@@ -3,216 +3,354 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IoT-126 Smart Greenhouse</title>
+<title>โรงเรือนอัจฉริยะ IoT-126</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Noto+Serif+Thai:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  --bg:#0a110d; --panel:#111a14; --panel2:#18251d; --line:#22332a;
-  --text:#e8f1eb; --muted:#89a293; --accent:#a3e635;
-  --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa;
+  --paper:#EDF2E9;      /* พื้นหลังเขียวเซจ */
+  --glass:#FBFCF8;      /* แผงกระจก */
+  --ink:#16352A;        /* ตัวอักษรหลัก เขียวป่า */
+  --moss:#3F6B4F;       /* รอง */
+  --muted:#6B7D71;
+  --rule:#D6E0D1;
+  --ok:#2F8A57; --warn:#B7780A; --bad:#BE3D2A;
+  --c-temp:#D5602E; --c-hum:#3479AE; --c-soil:#8A5A3B; --c-light:#D99A00; --c-co2:#7366AE; --c-ph:#24978A;
+  --serif:'Noto Serif Thai',Georgia,serif;
+  --sans:'Anuphan',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{
-  background:
-    radial-gradient(900px 500px at 0% -10%, rgba(163,230,53,.10), transparent 60%),
-    radial-gradient(800px 500px at 100% 0%, rgba(96,165,250,.08), transparent 60%),
-    var(--bg);
-  color:var(--text);font-family:'IBM Plex Sans Thai',system-ui,sans-serif;min-height:100vh;
-}
-.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
-.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 40px}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;min-height:100vh;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 48px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--moss);outline-offset:2px;border-radius:6px}
 
-header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:16px}
-.brand{display:flex;gap:12px;align-items:center}
-.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:24px;
-  background:linear-gradient(135deg,var(--accent),#16a34a);box-shadow:0 8px 24px rgba(163,230,53,.25)}
-h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
-.sub{color:var(--muted);font-size:13px}
-.pills{display:flex;gap:8px;flex-wrap:wrap}
-.pill{border:1px solid var(--line);background:var(--panel);padding:7px 12px;border-radius:999px;font-size:13px;display:flex;align-items:center;gap:8px}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
-.dot.on{background:var(--ok);animation:pulse 1.6s infinite}
-.dot.off{background:var(--bad)}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.6)}70%{box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+/* ---------- ส่วนหัว ---------- */
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;margin-bottom:22px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0;letter-spacing:-.2px}
+.byline{color:var(--muted);margin-top:6px;font-size:14px}
+.byline b{color:var(--moss);font-weight:600}
+.status{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.live{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 12px;border-radius:999px;background:var(--glass);border:1px solid var(--rule);font-weight:600;font-size:14px}
+.live .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);position:relative}
+.live.on .dot{background:var(--ok)}
+.live.on .dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--ok);opacity:0;animation:ring 2s infinite}
+.live.off{color:var(--bad)} .live.off .dot{background:var(--bad)}
+@keyframes ring{0%{opacity:.7;transform:scale(.5)}100%{opacity:0;transform:scale(1.6)}}
+.when{font-size:14px;color:var(--muted)}
+.when b{color:var(--ink);font-weight:600}
 
-.banner{display:none;margin-bottom:12px;padding:10px 14px;border-radius:12px;font-size:13px;border:1px solid}
+.banner{display:none;margin:0 0 16px;padding:12px 16px;border-radius:12px;font-size:14px}
 .banner.show{display:block}
-.banner.demo{background:rgba(96,165,250,.08);border-color:rgba(96,165,250,.35);color:#bfdbfe}
-.banner.err{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.35);color:#fecaca}
+.banner.demo{background:#E3EEF6;color:#1F4E70}
+.banner.err{background:#F8E3DE;color:#8A2A1C}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;
-  transition:border-color .2s,transform .2s}
-.card:hover{transform:translateY(-2px)}
-.card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
-.card .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.label{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
-.ico{width:30px;height:30px;border-radius:9px;background:var(--panel2);display:grid;place-items:center;font-size:16px}
-.chip{font-size:11px;padding:2px 9px;border-radius:999px;font-weight:600;white-space:nowrap}
-.chip.ok{background:rgba(74,222,128,.14);color:var(--ok)}
-.chip.warn{background:rgba(251,191,36,.14);color:var(--warn)}
-.chip.bad{background:rgba(248,113,113,.14);color:var(--bad)}
-.chip.na{background:var(--panel2);color:var(--muted)}
-.val{font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:700;margin-top:10px;display:flex;align-items:baseline;gap:6px}
-.val small{font-size:13px;color:var(--muted);font-weight:500}
-.trend{font-size:13px;margin-left:auto}
-.trend.up{color:var(--warn)} .trend.down{color:var(--info)} .trend.flat{color:var(--muted)}
-.range{position:relative;height:8px;background:var(--panel2);border-radius:8px;margin-top:12px}
-.range .zone{position:absolute;top:0;bottom:0;background:rgba(74,222,128,.28);border-radius:8px}
-.range .mark{position:absolute;top:50%;width:14px;height:14px;border-radius:50%;background:var(--text);border:3px solid var(--bg);
-  transform:translate(-50%,-50%);transition:left .6s ease}
-.mm{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-top:8px}
+/* ---------- ฮีโร่: ภาพโรงเรือน + สรุป ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;margin-bottom:18px}
+@media(max-width:980px){.hero{grid-template-columns:minmax(0,1fr)}}
+.scene{background:var(--glass);border:1px solid var(--rule);border-radius:22px;overflow:hidden;position:relative}
+.scene svg{display:block;width:100%;height:auto}
+.scene .cap{font-size:13px;color:var(--moss);padding:10px 18px 12px;border-top:1px solid var(--rule)}
+.scene text{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.tag{font-size:15px;font-weight:700;fill:var(--ink);paint-order:stroke;stroke:#FBFCF8;stroke-width:5px;stroke-linejoin:round}
+.tag-s{font-size:11.5px;font-weight:500;fill:var(--muted);paint-order:stroke;stroke:#FBFCF8;stroke-width:4px;stroke-linejoin:round}
+.bubble{animation:rise 6s linear infinite}
+@keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-70px);opacity:0}}
+.scene #sunGlow,.scene #fog,.scene #mercury,.scene #soilBed,.scene .leaf,.scene #tankWater{transition:all 1s ease}
 
-.row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin-top:12px}
-@media(max-width:960px){.row{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
-.panel h2{font-size:15px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.tabs{display:flex;gap:6px;flex-wrap:wrap}
-.tab{font:inherit;font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}
-.tab.on{background:var(--accent);color:#14210a;border-color:var(--accent);font-weight:600}
-.chartbox{height:310px;position:relative}
-
-.score{display:flex;align-items:center;gap:16px;margin-bottom:14px}
-.score svg{flex:none}
-.score .big{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted)}
+.summary{background:var(--glass);border:1px solid var(--rule);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:18px}
+.scoreRow{display:flex;gap:18px;align-items:center}
+.scoreRow svg{flex:none}
+.verdict{font-family:var(--serif);font-size:22px;font-weight:600;line-height:1.3;margin:0}
+.verdict-sub{color:var(--muted);font-size:13.5px;margin-top:4px}
+.legend{margin-top:auto;padding-top:14px;border-top:1px solid var(--rule)}
+.legend h2{font-size:14px;font-weight:600;margin:0 0 8px;color:var(--moss)}
+.legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px;color:var(--muted)}
+.legend li{display:flex;gap:8px;align-items:center}
+.legend i{width:12px;height:12px;border-radius:4px;flex:none}
+.todo h2{font-size:15px;font-weight:600;margin:0 0 10px;color:var(--moss)}
 .advice{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.advice li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--panel2);font-size:13.5px;border-left:3px solid var(--ok)}
-.advice li.warn{border-left-color:var(--warn)} .advice li.bad{border-left-color:var(--bad)}
-.advice li span:first-child{font-size:16px;line-height:1.2}
+.advice li{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;padding:11px 14px;border-radius:12px;background:#F1F5EE;font-size:14.5px}
+.advice li svg{width:20px;height:20px;margin-top:1px}
+.advice li.ok{color:var(--ok)} .advice li.ok span{color:var(--ink)}
+.advice li.warn{background:#FBF2DF} .advice li.warn svg{color:var(--warn)}
+.advice li.bad{background:#F9E4DF} .advice li.bad svg{color:var(--bad)}
 
-.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-.kv div{background:var(--panel2);border-radius:12px;padding:10px 12px}
-.kv b{display:block;font-family:'JetBrains Mono',monospace;font-size:18px;margin-top:2px}
-.kv span{font-size:12px;color:var(--muted)}
-.kv em{font-style:normal;font-size:11px;color:var(--muted);display:block;margin-top:2px}
+/* ---------- แผ่นเซนเซอร์ ---------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:12px;margin-bottom:18px}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;background:var(--glass);border:1px solid var(--rule);border-radius:16px;padding:14px 16px 12px;display:flex;flex-direction:column;gap:2px;position:relative}
+.tile[aria-pressed="true"]{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+.tile:focus-visible{outline:2.5px solid var(--moss);outline-offset:2px}
+.tname{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted)}
+.tname i{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent)}
+.tname svg{width:17px;height:17px}
+.tval{font-size:32px;font-weight:600;line-height:1.15;margin-top:8px;letter-spacing:-.5px}
+.tval small{font-size:14px;color:var(--muted);font-weight:500;margin-left:4px;letter-spacing:0}
+.tstat{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.tstat::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.tstat.ok{color:var(--ok)} .tstat.warn{color:var(--warn)} .tstat.bad{color:var(--bad)} .tstat.na{color:var(--muted)}
+.spark{width:100%;height:34px;margin-top:8px;display:block}
+.trange{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 10px}
+.trange span{white-space:nowrap}
+.tile.flash{animation:flash .9s ease}
+@keyframes flash{0%{background:color-mix(in srgb,var(--c) 10%,var(--glass))}100%{background:var(--glass)}}
+
+/* ---------- แผงทั่วไป ---------- */
+.row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;margin-bottom:18px}
+@media(max-width:980px){.row{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--glass);border:1px solid var(--rule);border-radius:18px;padding:20px;min-width:0}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.ph h2{font-family:var(--serif);font-size:19px;font-weight:600;margin:0}
+.ph p{margin:0;color:var(--muted);font-size:13px}
+.seg{display:flex;gap:4px;flex-wrap:wrap;background:#E7EEE3;padding:4px;border-radius:12px;margin-bottom:12px;width:fit-content;max-width:100%}
+.seg button{border:0;background:transparent;padding:6px 12px;border-radius:9px;font-size:13.5px;cursor:pointer;color:var(--moss)}
+.seg button[aria-pressed="true"]{background:var(--glass);color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(22,53,42,.12)}
+.chartbox{height:300px;position:relative}
+
+.derived{margin:0}
+.derived div{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:11px 0;border-bottom:1px solid var(--rule)}
+.derived div:last-child{border-bottom:0}
+.derived dt{font-size:14px}
+.derived dd{margin:0;font-weight:600;font-size:17px;text-align:right}
+.derived small{grid-column:1/-1;color:var(--muted);font-size:12.5px}
 
 .tablewrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th{color:var(--muted);font-weight:500;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap}
+th{font-weight:500;color:var(--muted);font-size:12.5px;border-bottom:1px solid var(--rule)}
 th:first-child,td:first-child{text-align:left}
-td{font-family:'JetBrains Mono',monospace}
-tbody tr:first-child td{color:var(--accent)}
-.btn{font:inherit;font-size:12px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer}
-.btn:hover{border-color:var(--accent)}
-footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center;line-height:1.7}
-footer code{background:var(--panel);padding:1px 6px;border-radius:6px}
+tbody tr:nth-child(even){background:#F3F6F0}
+tbody tr:first-child td{font-weight:600}
+td.warn{color:var(--warn);font-weight:600} td.bad{color:var(--bad);font-weight:600}
+.btn{border:1px solid var(--rule);background:var(--glass);padding:7px 14px;border-radius:10px;cursor:pointer;font-size:13.5px;font-weight:500;display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:var(--moss)}
+.btn svg{width:16px;height:16px}
+
+/* ---------- เส้นทางข้อมูล ---------- */
+footer{margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--muted);font-size:13px;text-align:center}
+.flow{display:flex;align-items:center;gap:0;font-size:13px;color:var(--moss);font-weight:600}
+.flow span.node{padding:6px 12px;border:1px solid var(--rule);border-radius:999px;background:var(--glass)}
+.flow .wire{width:54px;height:2px;background:var(--rule);position:relative}
+.flow .wire i{position:absolute;top:-3px;left:0;width:8px;height:8px;border-radius:50%;background:var(--ok);opacity:0}
+.flow.go .wire i{animation:packet .7s ease-in forwards}
+.flow.go .wire + span + .wire i{animation-delay:.7s}
+@keyframes packet{0%{left:0;opacity:1}100%{left:calc(100% - 8px);opacity:1}}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header>
-    <div class="brand">
-      <div class="logo">🌱</div>
-      <div>
-        <h1>Smart Greenhouse Dashboard</h1>
-        <div class="sub" id="studentLine">IoT-126 · ESP32 + ESPHome → Firebase RTDB</div>
-      </div>
+    <div>
+      <h1>โรงเรือนอัจฉริยะ</h1>
+      <div class="byline" id="byline"></div>
     </div>
-    <div class="pills">
-      <div class="pill"><span class="dot" id="connDot"></span><span id="connText">กำลังเชื่อมต่อ…</span></div>
-      <div class="pill">อัปเดตล่าสุด <b class="mono" id="ageText">–</b></div>
-      <div class="pill mono" id="clock">--:--:--</div>
+    <div class="status">
+      <div class="live" id="live"><span class="dot"></span><span id="liveText">กำลังเชื่อมต่อ</span></div>
+      <div class="when">ข้อมูลล่าสุดเมื่อ <b id="ageText">–</b></div>
+      <div class="when"><b id="clock">--:--:--</b></div>
     </div>
   </header>
 
-  <div class="banner demo" id="demoBanner">โหมดสาธิต: ยังไม่ได้ใส่ URL ของ Firebase ในไฟล์ index.html จึงใช้ข้อมูลสุ่มในเบราว์เซอร์แทน</div>
+  <div class="banner demo" id="demoBanner">โหมดสาธิต: ยังไม่ได้ใส่ URL ของ Firebase ในไฟล์ index.html หน้านี้จึงแสดงข้อมูลสุ่มจากเบราว์เซอร์</div>
   <div class="banner err" id="errBanner"></div>
 
-  <section class="grid" id="cards"></section>
+  <!-- ภาพโรงเรือนที่เปลี่ยนตามข้อมูลจริง -->
+  <section class="hero">
+    <figure class="scene" style="margin:0">
+      <svg viewBox="0 0 640 360" role="img" aria-label="ภาพจำลองโรงเรือนตามค่าเซนเซอร์ล่าสุด">
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#D7E8EE"/><stop offset="1" stop-color="#F4F8EF"/>
+          </linearGradient>
+          <radialGradient id="glowGrad"><stop offset="0" stop-color="#FFD866" stop-opacity=".9"/><stop offset="1" stop-color="#FFD866" stop-opacity="0"/></radialGradient>
+          <clipPath id="house"><path d="M120 300 V170 Q320 36 520 170 V300 Z"/></clipPath>
+        </defs>
+        <rect width="640" height="360" fill="url(#sky)"/>
+        <rect id="warm" width="640" height="360" fill="#FFE9A8" opacity="0"/>
+        <!-- ดวงอาทิตย์ = ค่าแสง -->
+        <circle id="sunGlow" cx="560" cy="70" r="60" fill="url(#glowGrad)"/>
+        <circle cx="560" cy="70" r="24" fill="#F2B705"/>
+        <text class="tag" x="560" y="122" text-anchor="middle" id="sLight">–</text>
+        <text class="tag-s" x="560" y="138" text-anchor="middle">ความเข้มแสง</text>
+        <!-- พื้น -->
+        <rect y="300" width="640" height="60" fill="#CBD9C2"/>
+        <path d="M0 300 H640" stroke="#A9BFA0" stroke-width="2"/>
+        <!-- โรงเรือน -->
+        <path d="M120 300 V170 Q320 36 520 170 V300 Z" fill="#FFFFFF" fill-opacity=".45"/>
+        <g clip-path="url(#house)">
+          <!-- แปลงดิน = ความชื้นในดิน -->
+          <rect id="soilBed" x="140" y="262" width="360" height="38" fill="#9C7352"/>
+          <!-- ต้นไม้ = คะแนนสุขภาพ -->
+          <g id="plants"></g>
+          <!-- ฟอง CO2 -->
+          <g id="bubbles" opacity=".4">
+            <circle class="bubble" cx="215" cy="240" r="4" fill="#9A90C9" style="animation-delay:0s"/>
+            <circle class="bubble" cx="300" cy="248" r="3" fill="#9A90C9" style="animation-delay:1.4s"/>
+            <circle class="bubble" cx="365" cy="236" r="5" fill="#9A90C9" style="animation-delay:2.8s"/>
+            <circle class="bubble" cx="440" cy="246" r="3.5" fill="#9A90C9" style="animation-delay:4.1s"/>
+            <circle class="bubble" cx="255" cy="244" r="2.5" fill="#9A90C9" style="animation-delay:3.3s"/>
+          </g>
+          <!-- หมอก = ความชื้นอากาศ -->
+          <rect id="fog" x="120" y="36" width="400" height="264" fill="#FFFFFF" opacity="0"/>
+          <!-- โครงกระจก -->
+          <g stroke="#3F6B4F" stroke-opacity=".35" stroke-width="2">
+            <path d="M170 30V300M220 30V300M270 30V300M320 30V300M370 30V300M420 30V300M470 30V300"/>
+            <path d="M120 170H520M120 235H520"/>
+          </g>
+        </g>
+        <path d="M120 300 V170 Q320 36 520 170 V300" fill="none" stroke="#3F6B4F" stroke-width="4" stroke-linejoin="round"/>
+        <text class="tag" x="320" y="128" text-anchor="middle" id="sHum">–</text>
+        <text class="tag-s" x="320" y="144" text-anchor="middle">ความชื้นอากาศ</text>
+        <text class="tag" x="320" y="208" text-anchor="middle" id="sCo2">–</text>
+        <text class="tag-s" x="320" y="224" text-anchor="middle">ก๊าซ CO₂</text>
+        <text class="tag" x="320" y="330" text-anchor="middle" id="sSoil">–</text>
+        <text class="tag-s" x="320" y="346" text-anchor="middle">ความชื้นในดิน</text>
+        <!-- เทอร์โมมิเตอร์ = อุณหภูมิ -->
+        <g>
+          <rect x="62" y="120" width="18" height="160" rx="9" fill="#FFFFFF" stroke="#3F6B4F" stroke-width="2.5"/>
+          <rect id="mercury" x="67.5" y="200" width="7" height="80" rx="3.5" fill="#D5602E"/>
+          <circle id="bulb" cx="71" cy="286" r="14" fill="#D5602E" stroke="#3F6B4F" stroke-width="2.5"/>
+          <text class="tag" x="71" y="108" text-anchor="middle" id="sTemp">–</text>
+          <text class="tag-s" x="71" y="92" text-anchor="middle">อุณหภูมิ</text>
+        </g>
+        <!-- ถังน้ำ = pH -->
+        <g>
+          <rect x="545" y="222" width="54" height="78" rx="6" fill="#FFFFFF" stroke="#3F6B4F" stroke-width="2.5"/>
+          <rect id="tankWater" x="549" y="236" width="46" height="60" rx="3" fill="#4CAF50" opacity=".75"/>
+          <text class="tag" x="572" y="196" text-anchor="middle" id="sPh">–</text>
+          <text class="tag-s" x="572" y="212" text-anchor="middle">ค่า pH ถังน้ำ</text>
+        </g>
+      </svg>
+      <figcaption class="cap">ภาพนี้เปลี่ยนตามค่าเซนเซอร์จริงทุกครั้งที่ ESP32 ส่งข้อมูล</figcaption>
+    </figure>
+
+    <aside class="summary">
+      <div class="scoreRow">
+        <svg width="108" height="108" viewBox="0 0 108 108" aria-hidden="true">
+          <circle cx="54" cy="54" r="45" fill="none" stroke="#E2EADD" stroke-width="10"/>
+          <circle id="scoreArc" cx="54" cy="54" r="45" fill="none" stroke="var(--ok)" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="282.74" stroke-dashoffset="282.74" transform="rotate(-90 54 54)"
+                  style="transition:stroke-dashoffset 1s ease,stroke .5s"/>
+          <text id="scoreNum" x="54" y="62" text-anchor="middle" font-family="Anuphan,sans-serif" font-size="28" font-weight="700" fill="#16352A">–</text>
+        </svg>
+        <div>
+          <p class="verdict" id="verdict">รอข้อมูลจากโรงเรือน</p>
+          <div class="verdict-sub">คะแนนสุขภาพพืช จากเซนเซอร์ 6 ตัวเทียบกับช่วงที่เหมาะสม</div>
+        </div>
+      </div>
+      <div class="todo">
+        <h2>สิ่งที่ควรทำตอนนี้</h2>
+        <ul class="advice" id="advice"></ul>
+      </div>
+      <div class="legend">
+        <h2>วิธีอ่านภาพโรงเรือน</h2>
+        <ul>
+          <li><i style="background:#F2B705"></i>ดวงอาทิตย์ยิ่งเรืองแสง ยิ่งแดดจัด</li>
+          <li><i style="background:#D5602E"></i>ปรอทสูงขึ้นตามอุณหภูมิ</li>
+          <li><i style="background:#DDE6E4;border:1px solid #C3CFC9"></i>หมอกในโรงเรือน คือความชื้นอากาศ</li>
+          <li><i style="background:#6B4A30"></i>ดินยิ่งสีเข้ม ยิ่งชื้น</li>
+          <li><i style="background:#9A90C9"></i>ฟองอากาศหนาแน่นเมื่อ CO₂ สูง</li>
+          <li><i style="background:#4CAF50"></i>สีน้ำในถังเปลี่ยนตามค่า pH</li>
+          <li><i style="background:#3E8E4E"></i>ใบเขียวสดเมื่อคะแนนสูง เหลืองเมื่อมีปัญหา</li>
+        </ul>
+      </div>
+    </aside>
+  </section>
+
+  <!-- แผ่นเซนเซอร์ 6 ตัว (กดเพื่อดูกราฟ) -->
+  <section class="tiles" id="tiles" aria-label="ค่าเซนเซอร์ล่าสุด"></section>
 
   <section class="row">
     <div class="panel">
-      <h2>
-        <span>กราฟย้อนหลัง <span class="sub" id="chartSub"></span></span>
-        <div class="tabs" id="tabs"></div>
-      </h2>
-      <div class="chartbox"><canvas id="chart"></canvas></div>
+      <div class="ph"><h2>แนวโน้มย้อนหลัง</h2><p id="chartSub"></p></div>
+      <div class="seg" id="seg" role="group" aria-label="เลือกเซนเซอร์ที่จะแสดงกราฟ"></div>
+      <div class="chartbox"><canvas id="chart" aria-label="กราฟค่าเซนเซอร์ย้อนหลัง"></canvas></div>
     </div>
-
     <div class="panel">
-      <h2>ผู้ช่วยดูแลโรงเรือน</h2>
-      <div class="score">
-        <svg width="92" height="92" viewBox="0 0 92 92">
-          <circle cx="46" cy="46" r="38" fill="none" stroke="var(--panel2)" stroke-width="9"/>
-          <circle id="scoreArc" cx="46" cy="46" r="38" fill="none" stroke="var(--ok)" stroke-width="9"
-                  stroke-linecap="round" stroke-dasharray="238.76" stroke-dashoffset="238.76"
-                  transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .8s,stroke .4s"/>
-          <text id="scoreNum" x="46" y="52" text-anchor="middle" fill="var(--text)"
-                font-family="JetBrains Mono" font-size="22" font-weight="700">–</text>
-        </svg>
-        <div>
-          <div style="font-weight:600" id="scoreLabel">คะแนนสุขภาพพืช</div>
-          <div class="big">คำนวณจากเซนเซอร์ 6 ตัวเทียบช่วงที่เหมาะสม</div>
-        </div>
-      </div>
-      <ul class="advice" id="advice"></ul>
+      <div class="ph"><h2>ค่าคำนวณเพิ่มเติม</h2></div>
+      <dl class="derived">
+        <div><dt>VPD (แรงดึงน้ำจากใบ)</dt><dd id="vpd">–</dd><small id="vpdNote">ช่วงเหมาะสม 0.8–1.2 kPa</small></div>
+        <div><dt>อุณหภูมิที่คนรู้สึก</dt><dd id="hi">–</dd><small id="hiNote">Heat Index สำหรับคนทำงานในโรงเรือน</small></div>
+        <div><dt>จุดน้ำค้าง</dt><dd id="dew">–</dd><small id="dewNote">ถ้าใกล้อุณหภูมิอากาศ ใบพืชจะเปียกและเสี่ยงเชื้อรา</small></div>
+        <div><dt>สัญญาณ WiFi ของ ESP32</dt><dd id="rssi">–</dd><small id="rssiNote"></small></div>
+        <div><dt>บอร์ดเปิดต่อเนื่องมา</dt><dd id="uptime">–</dd><small id="devName"></small></div>
+        <div><dt>ข้อมูลที่ได้รับในรอบนี้</dt><dd id="rx">0</dd><small>นับตั้งแต่เปิดหน้านี้ ส่งทุก 10 วินาที</small></div>
+      </dl>
     </div>
   </section>
 
-  <section class="row">
-    <div class="panel">
-      <h2>
-        <span>ประวัติข้อมูลล่าสุด <span class="sub" id="histCount"></span></span>
-        <button class="btn" id="csvBtn">⬇ ดาวน์โหลด CSV</button>
-      </h2>
-      <div class="tablewrap">
-        <table>
-          <thead><tr id="thead"></tr></thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
+  <section class="panel" style="margin-bottom:22px">
+    <div class="ph">
+      <h2>บันทึกข้อมูลล่าสุด</h2>
+      <button class="btn" id="csvBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>ดาวน์โหลด CSV</button>
     </div>
-
-    <div class="panel">
-      <h2>ค่าคำนวณ &amp; สถานะอุปกรณ์</h2>
-      <div class="kv">
-        <div><span>Heat Index</span><b id="hi">–</b><em id="hiNote"></em></div>
-        <div><span>VPD (ความต้องการคายน้ำ)</span><b id="vpd">–</b><em id="vpdNote"></em></div>
-        <div><span>จุดน้ำค้าง</span><b id="dew">–</b><em>เสี่ยงเชื้อราเมื่อใกล้อุณหภูมิอากาศ</em></div>
-        <div><span>สัญญาณ WiFi</span><b id="rssi">–</b><em id="rssiNote"></em></div>
-        <div><span>Uptime ของ ESP32</span><b id="uptime">–</b><em id="devName"></em></div>
-        <div><span>จำนวนข้อมูลที่ได้รับ</span><b id="rx">0</b><em>นับตั้งแต่เปิดหน้านี้</em></div>
-      </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
     </div>
+    <p style="margin:10px 0 0;color:var(--muted);font-size:13px" id="histCount"></p>
   </section>
 
   <footer>
-    ข้อมูลจาก Firebase Realtime Database · <code>/latest</code> (ค่าปัจจุบัน) และ <code>/history</code> (ประวัติ)<br>
-    <span id="dbLine"></span>
+    <div class="flow" id="flow">
+      <span class="node">ESP32 + ESPHome</span><span class="wire"><i></i></span>
+      <span class="node">Firebase RTDB</span><span class="wire"><i></i></span>
+      <span class="node">หน้านี้</span>
+    </div>
+    <div id="dbLine"></div>
   </footer>
 </div>
 
 <script>
 /* ====================== ตั้งค่า (แก้ตรงนี้) ====================== */
-// URL ของ Realtime Database (คัดลอกจาก Firebase Console › Realtime Database) ไม่ต้องมี / ปิดท้าย
-const DB_URL  = "https://iot-126-default-rtdb.asia-southeast1.firebasedatabase.app";
-const STUDENT = "ศิรวิทย์ จันสุกศรี · 6710886126";
+const DB_URL       = "https://iot-126-default-rtdb.asia-southeast1.firebasedatabase.app";
+const STUDENT_NAME = "ศิรวิทย์ จันสุกศรี";
+const STUDENT_ID   = "6710886126";
 const MAX_POINTS    = 60;   // จำนวนจุดในกราฟ/ประวัติ
-const OFFLINE_AFTER = 30;   // วินาที ถ้าไม่มีข้อมูลใหม่เกินนี้ถือว่า Offline
+const OFFLINE_AFTER = 30;   // วินาที ไม่มีข้อมูลใหม่เกินนี้ = ออฟไลน์
 /* ================================================================ */
 
 const DEMO = DB_URL.includes("YOUR-") || new URLSearchParams(location.search).has("demo");
 
+const ICON = {
+  temperature:'<path d="M14 14.76V5a2 2 0 0 0-4 0v9.76a4 4 0 1 0 4 0z"/>',
+  humidity:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  soil_moisture:'<path d="M12 20v-8"/><path d="M12 12c0-4 3-6 7-6 0 4-3 6-7 6z"/><path d="M12 14c0-3-2.5-5-6-5 0 3 2.5 5 6 5z"/><path d="M5 20h14"/>',
+  light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  co2:'<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/>',
+  ph:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/>',
+  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  alert:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+};
+const svgI = (k) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+
 const METRICS = [
-  {key:"temperature",  label:"อุณหภูมิอากาศ", unit:"°C",  icon:"🌡️", dec:1, min:10,  max:45,    ok:[20,32],      warn:[16,35],     color:"#fb923c"},
-  {key:"humidity",     label:"ความชื้นอากาศ", unit:"%",   icon:"💨", dec:1, min:0,   max:100,   ok:[50,80],      warn:[40,88],     color:"#60a5fa"},
-  {key:"soil_moisture",label:"ความชื้นในดิน", unit:"%",   icon:"🪴", dec:1, min:0,   max:100,   ok:[40,70],      warn:[30,80],     color:"#a3e635"},
-  {key:"light",        label:"ความเข้มแสง",   unit:"lux", icon:"☀️", dec:0, min:0,   max:60000, ok:[10000,40000],warn:[4000,50000],color:"#facc15"},
-  {key:"co2",          label:"ก๊าซ CO₂",      unit:"ppm", icon:"🫧", dec:0, min:300, max:2000,  ok:[400,1000],   warn:[350,1500],  color:"#c084fc"},
-  {key:"ph",           label:"ค่า pH",        unit:"pH",  icon:"🧪", dec:2, min:4,   max:9,     ok:[5.5,7.0],    warn:[5.0,7.5],   color:"#2dd4bf"},
+  {key:"temperature",  label:"อุณหภูมิอากาศ", unit:"°C",  dec:1, min:10,  max:45,    ok:[20,32],       warn:[16,35],      color:"#D5602E"},
+  {key:"humidity",     label:"ความชื้นอากาศ", unit:"%",   dec:1, min:0,   max:100,   ok:[50,80],       warn:[40,88],      color:"#3479AE"},
+  {key:"soil_moisture",label:"ความชื้นในดิน", unit:"%",   dec:1, min:0,   max:100,   ok:[40,70],       warn:[30,80],      color:"#8A5A3B"},
+  {key:"light",        label:"ความเข้มแสง",   unit:"lux", dec:0, min:0,   max:60000, ok:[10000,40000], warn:[4000,50000], color:"#D99A00"},
+  {key:"co2",          label:"ก๊าซ CO₂",      unit:"ppm", dec:0, min:300, max:2000,  ok:[400,1000],    warn:[350,1500],   color:"#7366AE"},
+  {key:"ph",           label:"ค่า pH",        unit:"",    dec:2, min:4,   max:9,     ok:[5.5,7.0],     warn:[5.0,7.5],    color:"#24978A"},
 ];
-const STATUS_TXT = {ok:"ปกติ", warn:"เฝ้าระวัง", bad:"ผิดปกติ", na:"ไม่มีข้อมูล"};
+const STATUS_TXT = {ok:"อยู่ในช่วงเหมาะสม", warn:"ควรเฝ้าระวัง", bad:"ผิดปกติ", na:"ยังไม่มีข้อมูล"};
 
 let latest = null, latestRaw = {}, history = [], selected = "temperature", rxCount = 0, lastRxLocal = 0;
 const $ = id => document.getElementById(id);
 const fmt = (v, d) => (v == null || isNaN(v)) ? "–" : Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
 const clamp = (v,a,b) => Math.min(Math.max(v,a),b);
+const norm01 = (v,a,b) => clamp((v-a)/(b-a),0,1);
 const tstr = ts => new Date(ts).toLocaleTimeString("th-TH",{hour12:false});
+const mix = (c1,c2,t) => { const p=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)); const a=p(c1),b=p(c2);
+  return "#"+a.map((x,i)=>Math.round(x+(b[i]-x)*t).toString(16).padStart(2,"0")).join(""); };
 
 function statusOf(m, v){
   if (v == null || isNaN(v)) return "na";
@@ -221,167 +359,200 @@ function statusOf(m, v){
   return "bad";
 }
 
-/* ---------- สร้างการ์ดและแท็บ ---------- */
+/* ---------- สร้างหน้า ---------- */
 function buildUI(){
-  $("studentLine").textContent = `IoT-126 · ${STUDENT}`;
-  $("dbLine").textContent = DEMO ? "โหมดสาธิต (ข้อมูลสุ่ม)" : DB_URL.replace("https://","");
-  $("cards").innerHTML = METRICS.map(m => {
-    const zl = (m.ok[0]-m.min)/(m.max-m.min)*100, zw = (m.ok[1]-m.ok[0])/(m.max-m.min)*100;
-    return `<article class="card" data-key="${m.key}">
-      <div class="top"><div class="label"><span class="ico">${m.icon}</span>${m.label}</div>
-        <span class="chip na" id="chip-${m.key}">–</span></div>
-      <div class="val"><span id="v-${m.key}">–</span><small>${m.unit}</small><span class="trend flat" id="t-${m.key}"></span></div>
-      <div class="range"><div class="zone" style="left:${zl}%;width:${zw}%"></div><div class="mark" id="mk-${m.key}" style="left:0%"></div></div>
-      <div class="mm"><span>ต่ำสุด <b class="mono" id="mn-${m.key}">–</b></span><span>เหมาะสม ${m.ok[0]}–${m.ok[1]}</span><span>สูงสุด <b class="mono" id="mx-${m.key}">–</b></span></div>
-    </article>`;
-  }).join("");
-  $("tabs").innerHTML = METRICS.map(m => `<button class="tab" data-key="${m.key}">${m.label}</button>`).join("");
+  $("byline").innerHTML = `แดชบอร์ด IoT-126 จัดทำโดย <b>${STUDENT_NAME}</b> รหัส <b>${STUDENT_ID}</b>`;
+  $("dbLine").textContent = DEMO ? "โหมดสาธิต (ข้อมูลสุ่ม)" : `ฐานข้อมูล ${DB_URL.replace("https://","")} ใช้ /latest และ /history`;
+  $("tiles").innerHTML = METRICS.map(m => `
+    <button class="tile" data-key="${m.key}" aria-pressed="false" style="--c:${m.color}">
+      <span class="tname"><i>${svgI(m.key)}</i>${m.label}</span>
+      <span class="tval"><span id="v-${m.key}">–</span><small>${m.unit}</small></span>
+      <span class="tstat na" id="st-${m.key}">${STATUS_TXT.na}</span>
+      <svg class="spark" viewBox="0 0 100 34" preserveAspectRatio="none" id="sp-${m.key}" aria-hidden="true"></svg>
+      <span class="trange"><span>เหมาะสม ${fmt(m.ok[0],0)}–${fmt(m.ok[1], m.dec>1?1:0)}</span><span id="tr-${m.key}"></span></span>
+    </button>`).join("");
+  $("seg").innerHTML = METRICS.map(m => `<button data-key="${m.key}" aria-pressed="false">${m.label}</button>`).join("");
   document.querySelectorAll("[data-key]").forEach(el => el.addEventListener("click", () => selectMetric(el.dataset.key)));
-  $("thead").innerHTML = `<th>เวลา</th>` + METRICS.map(m => `<th>${m.label}<br>(${m.unit})</th>`).join("");
+  $("thead").innerHTML = `<th>เวลา</th>` + METRICS.map(m => `<th>${m.label}${m.unit ? " ("+m.unit+")" : ""}</th>`).join("");
   $("csvBtn").addEventListener("click", exportCSV);
+  // ต้นไม้ 6 ต้นในโรงเรือน
+  $("plants").innerHTML = [170,230,290,350,410,470].map((x,i) => `
+    <g transform="translate(${x},264)">
+      <path d="M0 0V-${30+(i%3)*6}" stroke="#4E7A3E" stroke-width="3" stroke-linecap="round"/>
+      <path class="leaf" d="M0 -14C-14 -16 -22 -28 -20 -38C-8 -34 0 -26 0 -14Z" fill="#3E8E4E"/>
+      <path class="leaf" d="M0 -22C14 -24 22 -36 20 -46C8 -42 0 -34 0 -22Z" fill="#3E8E4E"/>
+    </g>`).join("");
 }
 
 /* ---------- กราฟ ---------- */
 let chart;
 function buildChart(){
-  if (!window.Chart){ $("chart").parentElement.innerHTML = '<p class="sub">โหลดไลบรารีกราฟไม่สำเร็จ (ตรวจสอบอินเทอร์เน็ต)</p>'; return; }
-  Chart.defaults.color = "#89a293";
-  Chart.defaults.font.family = "'IBM Plex Sans Thai', sans-serif";
+  if (!window.Chart){ $("chart").parentElement.innerHTML = '<p style="color:var(--muted)">โหลดไลบรารีกราฟไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้า</p>'; return; }
+  Chart.defaults.color = "#6B7D71";
+  Chart.defaults.font.family = "Anuphan, sans-serif";
   chart = new Chart($("chart"), {
     type:"line",
     data:{labels:[], datasets:[
-      {label:"ค่า", data:[], borderWidth:2.5, tension:.35, pointRadius:0, pointHoverRadius:4, fill:true},
-      {label:"ขอบล่างช่วงเหมาะสม", data:[], borderColor:"rgba(74,222,128,.55)", borderDash:[6,6], borderWidth:1.2, pointRadius:0, fill:false},
-      {label:"ขอบบนช่วงเหมาะสม",  data:[], borderColor:"rgba(74,222,128,.55)", borderDash:[6,6], borderWidth:1.2, pointRadius:0, fill:false},
+      {label:"ขอบล่าง", data:[], borderWidth:0, pointRadius:0, fill:false},
+      {label:"ช่วงเหมาะสม", data:[], borderWidth:0, pointRadius:0, fill:"-1", backgroundColor:"rgba(47,138,87,.10)"},
+      {label:"ค่า", data:[], borderWidth:2.5, tension:.35, pointRadius:0, pointHoverRadius:5, fill:false},
     ]},
     options:{
-      responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      responsive:true, maintainAspectRatio:false, animation:{duration:450},
       interaction:{mode:"index", intersect:false},
-      plugins:{legend:{display:false}, tooltip:{backgroundColor:"#18251d", borderColor:"#22332a", borderWidth:1}},
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:"#16352A", padding:10, cornerRadius:8, filter:i => i.datasetIndex === 2,
+          callbacks:{label:c => ` ${c.dataset.label}: ${c.formattedValue}`}}},
       scales:{
-        x:{grid:{color:"rgba(255,255,255,.04)"}, ticks:{maxTicksLimit:8, maxRotation:0}},
-        y:{grid:{color:"rgba(255,255,255,.05)"}}
+        x:{grid:{display:false}, ticks:{maxTicksLimit:innerWidth < 600 ? 4 : 7, maxRotation:0}, border:{color:"#D6E0D1"}},
+        y:{grid:{color:"rgba(22,53,42,.06)"}, border:{display:false}}
       }
     }
   });
 }
 function selectMetric(key){
   selected = key;
-  document.querySelectorAll(".card").forEach(c => c.classList.toggle("sel", c.dataset.key === key));
-  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.key === key));
+  document.querySelectorAll("[data-key]").forEach(el => el.setAttribute("aria-pressed", el.dataset.key === key));
   updateChart();
 }
 function updateChart(){
-  if (!chart) return;
   const m = METRICS.find(x => x.key === selected);
-  const ctx = chart.ctx, g = ctx.createLinearGradient(0,0,0,300);
-  g.addColorStop(0, m.color + "55"); g.addColorStop(1, m.color + "00");
+  $("chartSub").textContent = `${m.label} ${history.length} จุดล่าสุด แถบเขียวคือช่วงที่เหมาะสม`;
+  if (!chart) return;
   const ds = chart.data.datasets;
   chart.data.labels = history.map(r => tstr(r.ts));
-  ds[0].data = history.map(r => r[m.key]); ds[0].label = `${m.label} (${m.unit})`;
-  ds[0].borderColor = m.color; ds[0].backgroundColor = g;
-  ds[1].data = history.map(() => m.ok[0]);
-  ds[2].data = history.map(() => m.ok[1]);
+  ds[0].data = history.map(() => m.ok[0]);
+  ds[1].data = history.map(() => m.ok[1]);
+  ds[2].data = history.map(r => r[m.key]);
+  ds[2].label = `${m.label}${m.unit ? " ("+m.unit+")" : ""}`;
+  ds[2].borderColor = m.color;
   chart.update();
-  $("chartSub").textContent = `· ${m.label} · ${history.length} จุดล่าสุด`;
 }
 
 /* ---------- แสดงผลค่าล่าสุด ---------- */
+function sparkline(m){
+  const vals = history.slice(-30).map(r => r[m.key]).filter(v => v != null && !isNaN(v));
+  if (vals.length < 2) return "";
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+  const pts = vals.map((v,i) => `${(i/(vals.length-1)*100).toFixed(2)},${(31 - (v-lo)/span*27).toFixed(2)}`);
+  return `<polyline points="${pts.join(" ")}" fill="none" stroke="${m.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          <polygon points="0,34 ${pts.join(" ")} 100,34" fill="${m.color}" opacity=".08"/>`;
+}
+
 function render(rec){
-  const prev = history.length > 1 ? history[history.length-2] : null;
   let total = 0, n = 0;
   METRICS.forEach(m => {
     const v = rec[m.key], st = statusOf(m, v);
     $(`v-${m.key}`).textContent = fmt(v, m.dec);
-    const chip = $(`chip-${m.key}`); chip.className = `chip ${st}`; chip.textContent = STATUS_TXT[st];
-    $(`mk-${m.key}`).style.left = clamp((v - m.min)/(m.max - m.min)*100, 0, 100) + "%";
-    const t = $(`t-${m.key}`);
-    if (prev && prev[m.key] != null && v != null){
-      const d = v - prev[m.key], eps = (m.max - m.min) * 0.002;
-      t.className = "trend " + (d > eps ? "up" : d < -eps ? "down" : "flat");
-      t.textContent = d > eps ? "▲" : d < -eps ? "▼" : "•";
-    }
+    const s = $(`st-${m.key}`); s.className = `tstat ${st}`; s.textContent = STATUS_TXT[st];
+    $(`sp-${m.key}`).innerHTML = sparkline(m);
     const vals = history.map(r => r[m.key]).filter(x => x != null && !isNaN(x));
-    if (vals.length){ $(`mn-${m.key}`).textContent = fmt(Math.min(...vals), m.dec); $(`mx-${m.key}`).textContent = fmt(Math.max(...vals), m.dec); }
+    if (vals.length) $(`tr-${m.key}`).textContent = `${fmt(Math.min(...vals), m.dec)} ถึง ${fmt(Math.max(...vals), m.dec)}`;
+    const tile = document.querySelector(`.tile[data-key="${m.key}"]`);
+    tile.classList.remove("flash"); void tile.offsetWidth; tile.classList.add("flash");
     if (st !== "na"){ total += st === "ok" ? 100 : st === "warn" ? 60 : 15; n++; }
   });
 
-  // คะแนนสุขภาพ
   const score = n ? Math.round(total / n) : 0;
   $("scoreNum").textContent = n ? score : "–";
-  $("scoreArc").style.strokeDashoffset = 238.76 * (1 - score/100);
+  $("scoreArc").style.strokeDashoffset = 282.74 * (1 - score/100);
   $("scoreArc").style.stroke = score >= 85 ? "var(--ok)" : score >= 60 ? "var(--warn)" : "var(--bad)";
-  $("scoreLabel").textContent = score >= 85 ? "พืชอยู่ในสภาพดีมาก" : score >= 60 ? "มีบางค่าต้องเฝ้าระวัง" : "ต้องแก้ไขด่วน";
+  $("verdict").textContent = score >= 85 ? "พืชในโรงเรือนอยู่ในสภาพดี" : score >= 60 ? "มีบางค่าที่ต้องเฝ้าระวัง" : "ต้องแก้ไขสภาพโรงเรือนด่วน";
 
+  renderScene(rec, score);
   renderAdvice(rec);
   renderDerived(rec);
 }
 
+function renderScene(r, score){
+  const L = norm01(r.light, 1000, 55000);
+  $("sunGlow").setAttribute("r", 34 + L*56);
+  $("warm").setAttribute("opacity", (L*0.28).toFixed(2));
+  $("fog").setAttribute("opacity", (norm01(r.humidity, 45, 98)*0.6).toFixed(2));
+  $("soilBed").setAttribute("fill", mix("#D9BC94", "#4A2E1C", norm01(r.soil_moisture, 10, 90)));
+  $("bubbles").setAttribute("opacity", (0.12 + norm01(r.co2, 400, 1600)*0.85).toFixed(2));
+  const leaf = score >= 85 ? "#3E8E4E" : score >= 60 ? "#8EA43A" : "#B8963A";
+  document.querySelectorAll(".leaf").forEach(l => l.setAttribute("fill", leaf));
+  const tm = METRICS[0], tst = statusOf(tm, r.temperature);
+  const h = 8 + norm01(r.temperature, 10, 45)*142;
+  const mc = tst === "ok" ? "#D5602E" : tst === "warn" ? "#C8790A" : "#BE3D2A";
+  $("mercury").setAttribute("y", 280 - h); $("mercury").setAttribute("height", h);
+  $("mercury").setAttribute("fill", mc); $("bulb").setAttribute("fill", mc);
+  const hue = 8 + norm01(r.ph, 4, 9)*250;
+  $("tankWater").setAttribute("fill", `hsl(${hue.toFixed(0)},52%,52%)`);
+  $("sTemp").textContent  = `${fmt(r.temperature,1)}°C`;
+  $("sHum").textContent   = `${fmt(r.humidity,0)}%`;
+  $("sSoil").textContent  = `${fmt(r.soil_moisture,0)}%`;
+  $("sLight").textContent = `${fmt(r.light,0)} lux`;
+  $("sCo2").textContent   = `${fmt(r.co2,0)} ppm`;
+  $("sPh").textContent    = `pH ${fmt(r.ph,2)}`;
+}
+
 function renderAdvice(r){
   const a = [];
-  if (r.soil_moisture < 30)       a.push(["bad","💧","ดินแห้งมาก ควรเปิดระบบรดน้ำทันที"]);
-  else if (r.soil_moisture < 40)  a.push(["warn","💧","ดินเริ่มแห้ง เตรียมรดน้ำในรอบถัดไป"]);
-  else if (r.soil_moisture > 80)  a.push(["warn","🚱","ดินชื้นเกินไป หยุดรดน้ำ เสี่ยงรากเน่า"]);
-  if (r.temperature > 35)         a.push(["bad","🔥","ร้อนจัด เปิดพัดลม/พ่นหมอก และกางสแลนพรางแสง"]);
-  else if (r.temperature > 32)    a.push(["warn","🌬️","อุณหภูมิค่อนข้างสูง เปิดพัดลมระบายอากาศ"]);
-  else if (r.temperature < 16)    a.push(["warn","🧣","อากาศเย็น ปิดช่องลมเพื่อเก็บความร้อน"]);
-  if (r.humidity > 88)            a.push(["bad","🍄","ความชื้นสูงมาก เสี่ยงเชื้อรา ควรระบายอากาศ"]);
-  else if (r.humidity > 80)       a.push(["warn","🍄","ความชื้นสูง เฝ้าระวังเชื้อรา"]);
-  else if (r.humidity < 40)       a.push(["warn","🌫️","อากาศแห้ง พิจารณาพ่นหมอกเพิ่มความชื้น"]);
-  if (r.co2 > 1500)               a.push(["bad","🪟","CO₂ สูงเกิน เปิดระบายอากาศทันที"]);
-  else if (r.co2 > 1000)          a.push(["warn","🪟","CO₂ ค่อนข้างสูง เปิดช่องลมเล็กน้อย"]);
-  if (r.light < 4000)             a.push(["warn","💡","แสงน้อย พิจารณาเปิดไฟปลูกพืช (Grow light)"]);
-  else if (r.light > 50000)       a.push(["warn","⛱️","แสงจัดมาก กางสแลนพรางแสง"]);
-  if (r.ph < 5.5 || r.ph > 7.0)   a.push([(r.ph < 5 || r.ph > 7.5) ? "bad" : "warn","🧪",
-                                    r.ph < 5.5 ? "ดิน/น้ำเป็นกรด ปรับด้วยปูนขาวหรือโดโลไมท์" : "ดิน/น้ำเป็นด่าง ปรับด้วยกำมะถันหรือปุ๋ยกรด"]);
-  if (!a.length) a.push(["ok","✅","ทุกค่าอยู่ในช่วงเหมาะสม ไม่ต้องดำเนินการ"]);
-  $("advice").innerHTML = a.map(([c,i,t]) => `<li class="${c}"><span>${i}</span><span>${t}</span></li>`).join("");
+  if (r.soil_moisture < 30)       a.push(["bad","ดินแห้งมาก เปิดระบบรดน้ำทันที"]);
+  else if (r.soil_moisture < 40)  a.push(["warn","ดินเริ่มแห้ง เตรียมรดน้ำรอบถัดไป"]);
+  else if (r.soil_moisture > 80)  a.push(["warn","ดินชื้นเกินไป หยุดรดน้ำเพื่อกันรากเน่า"]);
+  if (r.temperature > 35)         a.push(["bad","ร้อนจัด เปิดพัดลมหรือพ่นหมอก และกางสแลนพรางแสง"]);
+  else if (r.temperature > 32)    a.push(["warn","อุณหภูมิค่อนข้างสูง เปิดพัดลมระบายอากาศ"]);
+  else if (r.temperature < 16)    a.push(["warn","อากาศเย็น ปิดช่องลมเพื่อเก็บความร้อน"]);
+  if (r.humidity > 88)            a.push(["bad","ความชื้นสูงมาก เสี่ยงเชื้อรา ระบายอากาศทันที"]);
+  else if (r.humidity > 80)       a.push(["warn","ความชื้นสูง เฝ้าระวังเชื้อราบนใบ"]);
+  else if (r.humidity < 40)       a.push(["warn","อากาศแห้ง พ่นหมอกเพิ่มความชื้น"]);
+  if (r.co2 > 1500)               a.push(["bad","CO₂ สูงเกิน เปิดระบายอากาศทันที"]);
+  else if (r.co2 > 1000)          a.push(["warn","CO₂ ค่อนข้างสูง เปิดช่องลมเล็กน้อย"]);
+  if (r.light < 4000)             a.push(["warn","แสงน้อย เปิดไฟปลูกพืช (Grow light)"]);
+  else if (r.light > 50000)       a.push(["warn","แสงจัดมาก กางสแลนพรางแสง"]);
+  if (r.ph < 5.5 || r.ph > 7.0)   a.push([(r.ph < 5 || r.ph > 7.5) ? "bad" : "warn",
+                                    r.ph < 5.5 ? "น้ำเป็นกรด ปรับด้วยปูนขาวหรือโดโลไมท์" : "น้ำเป็นด่าง ปรับด้วยกำมะถันหรือปุ๋ยกรด"]);
+  if (!a.length) a.push(["ok","ทุกค่าอยู่ในช่วงเหมาะสม ยังไม่ต้องทำอะไร"]);
+  $("advice").innerHTML = a.map(([c,t]) => `<li class="${c}">${svgI(c === "ok" ? "check" : "alert")}<span>${t}</span></li>`).join("");
 }
 
 function renderDerived(r){
   const T = r.temperature, RH = r.humidity;
   if (T != null && RH != null){
-    // Heat index (สูตร NOAA)
     const F = T*9/5+32;
     let HI = 0.5*(F+61+(F-68)*1.2+RH*0.094);
     if (HI >= 80) HI = -42.379+2.04901523*F+10.14333127*RH-.22475541*F*RH-.00683783*F*F-.05481717*RH*RH+.00122874*F*F*RH+.00085282*F*RH*RH-.00000199*F*F*RH*RH;
     const hiC = (HI-32)*5/9;
     $("hi").textContent = fmt(hiC,1) + " °C";
-    $("hiNote").textContent = hiC < 27 ? "สบาย" : hiC < 32 ? "เริ่มร้อน ควรระวัง" : hiC < 41 ? "ร้อนมาก ระวังเพลียแดด" : "อันตราย";
-    // VPD
+    $("hiNote").textContent = hiC < 27 ? "สบาย ทำงานในโรงเรือนได้ตามปกติ" : hiC < 32 ? "เริ่มร้อน ควรดื่มน้ำบ่อย ๆ" : hiC < 41 ? "ร้อนมาก พักเป็นระยะเพื่อกันเพลียแดด" : "อันตราย ควรหยุดทำงานในโรงเรือน";
     const svp = 0.6108*Math.exp(17.27*T/(T+237.3)), vpd = svp*(1-RH/100);
     $("vpd").textContent = fmt(vpd,2) + " kPa";
-    $("vpdNote").textContent = vpd < 0.4 ? "ต่ำเกิน พืชคายน้ำน้อย" : vpd < 0.8 ? "เหมาะกับต้นกล้า" : vpd <= 1.2 ? "เหมาะสมที่สุด" : vpd <= 1.6 ? "ค่อนข้างสูง" : "สูงเกิน พืชเครียด";
-    // Dew point
-    const g = Math.log(RH/100) + 17.62*T/(243.12+T);
-    $("dew").textContent = fmt(243.12*g/(17.62-g),1) + " °C";
+    $("vpdNote").textContent = vpd < 0.4 ? "ต่ำเกินไป พืชคายน้ำน้อยและดูดปุ๋ยได้ช้า" : vpd < 0.8 ? "เหมาะกับต้นกล้า" : vpd <= 1.2 ? "เหมาะสมที่สุดสำหรับการเติบโต" : vpd <= 1.6 ? "ค่อนข้างสูง พืชเริ่มคายน้ำมาก" : "สูงเกินไป พืชเครียดและใบอาจเหี่ยว";
+    const g = Math.log(RH/100) + 17.62*T/(243.12+T), dp = 243.12*g/(17.62-g);
+    $("dew").textContent = fmt(dp,1) + " °C";
+    $("dewNote").textContent = (T - dp) < 3 ? "ใกล้อุณหภูมิอากาศมาก ใบพืชเสี่ยงเปียกและเกิดเชื้อรา" : "ห่างจากอุณหภูมิอากาศพอสมควร ใบพืชไม่เปียก";
   }
   if (r.rssi != null){
     $("rssi").textContent = r.rssi + " dBm";
-    $("rssiNote").textContent = r.rssi > -60 ? "ดีมาก ▮▮▮▮" : r.rssi > -70 ? "ดี ▮▮▮▯" : r.rssi > -80 ? "พอใช้ ▮▮▯▯" : "อ่อน ▮▯▯▯";
+    $("rssiNote").textContent = r.rssi > -60 ? "แรงมาก" : r.rssi > -70 ? "ดี" : r.rssi > -80 ? "พอใช้ อาจหลุดบ้าง" : "อ่อน ควรย้ายบอร์ดใกล้เราเตอร์";
   }
   if (r.uptime != null){
     const s = r.uptime, d = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
-    $("uptime").textContent = (d ? d+"ว " : "") + h + "ชม " + m + "น";
+    $("uptime").textContent = (d ? d+" วัน " : "") + h + " ชม. " + m + " นาที";
   }
-  $("devName").textContent = r.device || "";
+  $("devName").textContent = r.device ? `ชื่ออุปกรณ์ ${r.device}` : "";
 }
 
-/* ---------- ตารางประวัติ / CSV ---------- */
+/* ---------- ตาราง / CSV ---------- */
 function renderTable(){
   const rows = history.slice(-10).reverse();
-  $("tbody").innerHTML = rows.map(r => `<tr><td>${tstr(r.ts)}</td>` + METRICS.map(m => `<td>${fmt(r[m.key], m.dec)}</td>`).join("") + `</tr>`).join("");
-  $("histCount").textContent = `· แสดง 10 จาก ${history.length} รายการ`;
+  $("tbody").innerHTML = rows.map(r => `<tr><td>${tstr(r.ts)}</td>` + METRICS.map(m => {
+    const st = statusOf(m, r[m.key]); return `<td class="${st === "warn" || st === "bad" ? st : ""}">${fmt(r[m.key], m.dec)}</td>`;
+  }).join("") + `</tr>`).join("");
+  $("histCount").textContent = `แสดง 10 รายการล่าสุดจาก ${history.length} รายการที่โหลดไว้ ตัวเลขสีส้มหรือแดงคือค่าที่หลุดช่วงเหมาะสม`;
 }
 function exportCSV(){
-  const head = ["datetime", ...METRICS.map(m => `${m.key} (${m.unit})`)];
+  const head = ["datetime", ...METRICS.map(m => `${m.key}${m.unit ? " ("+m.unit+")" : ""}`)];
   const lines = history.map(r => [new Date(r.ts).toLocaleString("sv-SE"), ...METRICS.map(m => r[m.key] ?? "")].join(","));
-  const blob = new Blob(["\ufeff" + [head.join(","), ...lines].join("\n")], {type:"text/csv;charset=utf-8"});
+  const blob = new Blob(["﻿" + [head.join(","), ...lines].join("\n")], {type:"text/csv;charset=utf-8"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = `iot-126-history-${Date.now()}.csv`; a.click();
 }
 
-/* ---------- จัดการข้อมูลเข้า ---------- */
+/* ---------- รับข้อมูล ---------- */
 function norm(o){
   const r = {ts: typeof o?.ts === "number" ? o.ts : Date.now(), device: o?.device};
   [...METRICS.map(m => m.key), "rssi", "uptime"].forEach(k => { if (o && o[k] != null) r[k] = Number(o[k]); });
@@ -389,7 +560,7 @@ function norm(o){
 }
 function addPoint(rec, redraw = true){
   const last = history[history.length-1];
-  if (last && Math.abs(rec.ts - last.ts) < 1500) history[history.length-1] = rec; // กันจุดซ้ำ (latest กับ history)
+  if (last && Math.abs(rec.ts - last.ts) < 1500) history[history.length-1] = rec;
   else history.push(rec);
   if (history.length > MAX_POINTS) history.splice(0, history.length - MAX_POINTS);
   if (redraw){ updateChart(); renderTable(); }
@@ -399,68 +570,58 @@ function onLatest(raw){
   $("rx").textContent = rxCount;
   addPoint(latest);
   render(latest);
+  const f = $("flow"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  tick();
 }
 
-/* ---------- เชื่อมต่อ Firebase (REST + Streaming, ไม่ต้องใช้ SDK) ---------- */
+/* ---------- Firebase (REST + Streaming) ---------- */
 function showErr(msg){ const b = $("errBanner"); b.textContent = msg; b.classList.toggle("show", !!msg); }
 
 async function loadHistory(){
-  const url = `${DB_URL}/history.json?orderBy=%22%24key%22&limitToLast=${MAX_POINTS}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`อ่าน /history ไม่ได้ (HTTP ${res.status}) – ตรวจสอบ URL และ Rules ของ Firebase`);
+  const res = await fetch(`${DB_URL}/history.json?orderBy=%22%24key%22&limitToLast=${MAX_POINTS}`);
+  if (!res.ok) throw new Error(`อ่านข้อมูล /history ไม่ได้ (HTTP ${res.status}) ตรวจสอบ DB_URL และ Rules ของ Firebase`);
   const obj = await res.json() || {};
   Object.keys(obj).sort().forEach(k => addPoint(norm(obj[k]), false));
   updateChart(); renderTable();
 }
-
 function listenLatest(){
   const es = new EventSource(`${DB_URL}/latest.json`);
-  const setPath = (path, data) => {
-    if (path === "/") latestRaw = data || {};
-    else latestRaw[path.slice(1).split("/")[0]] = data;
-  };
+  const setPath = (path, data) => { if (path === "/") latestRaw = data || {}; else latestRaw[path.slice(1).split("/")[0]] = data; };
   es.addEventListener("put",   e => { const {path, data} = JSON.parse(e.data); setPath(path, data); if (Object.keys(latestRaw).length) onLatest(latestRaw); });
-  es.addEventListener("patch", e => { const {path, data} = JSON.parse(e.data);
-    if (path === "/") Object.assign(latestRaw, data); else setPath(path, data); onLatest(latestRaw); });
-  es.addEventListener("cancel", () => showErr("Firebase ปฏิเสธการอ่าน /latest – ตั้ง Rules ให้ .read เป็น true"));
+  es.addEventListener("patch", e => { const {path, data} = JSON.parse(e.data); if (path === "/") Object.assign(latestRaw, data); else setPath(path, data); onLatest(latestRaw); });
+  es.addEventListener("cancel", () => showErr("Firebase ไม่อนุญาตให้อ่าน /latest ตั้ง Rules ให้ .read เป็น true"));
   es.onopen  = () => showErr("");
-  es.onerror = () => { if (!latest) showErr("เชื่อมต่อ Firebase ไม่ได้ – ตรวจสอบ DB_URL ในไฟล์ index.html"); };
+  es.onerror = () => { if (!latest) showErr("เชื่อมต่อ Firebase ไม่ได้ ตรวจสอบ DB_URL ในไฟล์ index.html"); };
 }
 
-/* ---------- โหมดสาธิต (ใช้เมื่อยังไม่ใส่ URL) ---------- */
+/* ---------- โหมดสาธิต ---------- */
 function startDemo(){
   $("demoBanner").classList.add("show");
-  let s = {temperature:29, humidity:66, soil_moisture:55, light:22000, co2:650, ph:6.3, rssi:-58, uptime:3600, device:"demo-esp32"};
-  const step = () => {
-    const j = a => (Math.random()-.5)*a;
+  let s = {temperature:29, humidity:70, soil_moisture:52, light:26000, co2:620, ph:6.4, rssi:-56, uptime:3700, device:"demo-esp32"};
+  const step = () => { const j = a => (Math.random()-.5)*a;
     s = {...s,
-      temperature: +clamp(s.temperature+j(1.2),20,40).toFixed(1),
-      humidity: +clamp(s.humidity+j(3),30,95).toFixed(1),
-      soil_moisture: +(s.soil_moisture < 25 ? 70 : clamp(s.soil_moisture+j(2.5)-0.15,10,90)).toFixed(1),
-      light: Math.round(clamp(s.light+j(4000),1000,55000)),
-      co2: Math.round(clamp(s.co2+j(80),380,1800)),
-      ph: +clamp(s.ph+j(.12),4.5,8).toFixed(2),
-      rssi: Math.round(clamp(s.rssi+j(4),-85,-45)),
-      uptime: s.uptime + 3};
-    return s;
-  };
+      temperature:+clamp(s.temperature+j(1.2),20,40).toFixed(1), humidity:+clamp(s.humidity+j(3),30,95).toFixed(1),
+      soil_moisture:+(s.soil_moisture < 25 ? 70 : clamp(s.soil_moisture+j(2.5)-0.15,10,90)).toFixed(1),
+      light:Math.round(clamp(s.light+j(4000),1000,55000)), co2:Math.round(clamp(s.co2+j(80),380,1800)),
+      ph:+clamp(s.ph+j(.12),4.5,8).toFixed(2), rssi:Math.round(clamp(s.rssi+j(4),-85,-45)), uptime:s.uptime+3};
+    return s; };
   const now = Date.now();
   for (let i = MAX_POINTS-1; i > 0; i--) addPoint({...step(), ts: now - i*3000}, false);
   onLatest({...step(), ts: Date.now()});
   setInterval(() => onLatest({...step(), ts: Date.now()}), 3000);
 }
 
-/* ---------- นาฬิกา & สถานะออนไลน์ ---------- */
+/* ---------- สถานะออนไลน์ ---------- */
 function tick(){
-  const now = new Date();
-  $("clock").textContent = now.toLocaleTimeString("th-TH",{hour12:false});
-  if (!latest){ $("connText").textContent = "รอข้อมูลจาก ESP32…"; return; }
-  const ref = DEMO ? lastRxLocal : Math.max(latest.ts, 0);
+  $("clock").textContent = new Date().toLocaleTimeString("th-TH",{hour12:false});
+  const live = $("live");
+  if (!latest){ $("liveText").textContent = "รอข้อมูลจาก ESP32"; return; }
+  const ref = DEMO ? lastRxLocal : latest.ts;
   const age = Math.max(0, Math.round((Date.now() - ref)/1000));
   const online = age <= OFFLINE_AFTER;
-  $("connDot").className = "dot " + (online ? "on" : "off");
-  $("connText").textContent = online ? "ESP32 ออนไลน์ · Realtime" : "ESP32 ออฟไลน์";
-  $("ageText").textContent = age < 60 ? `${age} วิ` : age < 3600 ? `${Math.floor(age/60)} นาที` : tstr(ref);
+  live.className = "live " + (online ? "on" : "off");
+  $("liveText").textContent = online ? "ESP32 ออนไลน์ อัปเดตสด" : "ESP32 ขาดการเชื่อมต่อ";
+  $("ageText").textContent = age < 5 ? "เมื่อสักครู่" : age < 60 ? `${age} วินาทีที่แล้ว` : age < 3600 ? `${Math.floor(age/60)} นาทีที่แล้ว` : tstr(ref);
 }
 
 /* ---------- เริ่มทำงาน ---------- */
